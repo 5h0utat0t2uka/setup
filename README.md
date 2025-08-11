@@ -1,7 +1,8 @@
 # Setup scripts for Apple Silicon macOS
 
-**Apple Silicon macOS** 向けの最小限の初期セットアップのスクリプト  
-- `setup.sh`: Command Line Tools / Homebrew, Brewfile / git, gh / GitHub認証 / SSH鍵生成から登録  
+最小限の初期セットアップのスクリプトです  
+`Use this template`からリポジトリを作成し、カスタマイズして利用してください  
+- `setup.sh`: Command Line Toolsのインストール / Homebrew, Brewfileのパッケージをインストール / SSH鍵を生成してGitHubへ公開鍵を登録  
 - `dotfiles.sh`: chezmoi の インストールから初期化と反映  
 
 ---
@@ -15,28 +16,19 @@ cd setup
 
 ### セットアップ
 ``` shell
-make setup \
-  GIT_NAME="Your Name" \
-  GIT_EMAIL="you@example.com" \
-  SSH_KEY_TITLE="github-$(hostname)-$(date +%Y%m%d)"
+# SSH_KEY_TITLEは省略出来ます
+make setup SSH_KEY_TITLE="github-$(hostname)-$(date +%Y%m%d)"
 ```
 
 ### ドットファイル
 ``` shell
-make dotfiles \
-  REPO="git@github.com:you/dotfiles.git" \
-  BRANCH="main"
+make dotfiles REPO="git@github.com:you/dotfiles.git" BRANCH="main"
 ```
 
 ## 直接実行する場合
-> [!CAUTION]
-> スクリプト内容を確認してから実行してください
-
 ### セットアップ
 ``` shell
 bash <(curl -fsSL https://raw.githubusercontent.com/<your-name>/setup/main/setup.sh) \
-  --git-name "Your Name" \
-  --git-email "you@example.com" \
   --ssh-key-title "github-$(hostname)-$(date +%Y%m%d)"
 ```
 
@@ -46,3 +38,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/<your-name>/setup/main/dotfi
   --repo "git@github.com:you/dotfiles.git" \
   --branch "main"
 ```
+
+> [!CAUTION]
+> スクリプト内容を確認してから実行してください
+
+## License
+This project is licensed under the [MIT License](./LICENSE).
