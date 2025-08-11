@@ -1,14 +1,18 @@
 # Makefile
 # Targets:
-#   make setup     … Command Line Tools / Homebrew / git, gh / GitHub認証 / SSH鍵生成から登録
-#   make dotfiles  … chezmoiの初期化と反映
+#   make setup:    Command Line Toolsのインストール / Homebrew, Brewfileのパッケージをインストール / SSH鍵を生成してGitHubへ公開鍵を登録
+#   make dotfiles: chezmoi の初期化と反映
 
 SHELL := /bin/zsh
 .ONESHELL:
 .SILENT:
+.DEFAULT_GOAL := help
 
-GIT_NAME      ?=
-GIT_EMAIL     ?=
+# 可変パラメータ
+# 例:
+# make setup SSH_KEY_TITLE="github-$(shell hostname)-$(shell date +%Y%m%d)"
+# make dotfiles REPO="git@github.com:you/dotfiles.git" BRANCH="main"
+
 SSH_KEY_TITLE ?=
 REPO          ?=
 BRANCH        ?=
@@ -20,21 +24,19 @@ DOTFILES_SCRIPT := ./dotfiles.sh
 
 help:
 	echo "Usage:"
-	echo "  make setup     GIT_NAME='Your Name' GIT_EMAIL='you@example.com' [SSH_KEY_TITLE='github-<host>-<YYYYMMDD>']"
+	echo "  make setup     [SSH_KEY_TITLE='github-<host>-<YYYYMMDD>']"
 	echo "  make dotfiles  REPO='git@github.com:you/dotfiles.git' [BRANCH='main']"
 
 setup:
-	if [[ -z "$(GIT_NAME)" || -z "$(GIT_EMAIL)" ]]; then
-	  echo "[error] GIT_NAME and GIT_EMAIL are required"; exit 1; fi
+	set -euo pipefail
 	chmod +x "$(SETUP_SCRIPT)"
 	"$(SETUP_SCRIPT)" \
-	  --git-name  "$(GIT_NAME)" \
-	  --git-email "$(GIT_EMAIL)" \
 	  $(if $(SSH_KEY_TITLE),--ssh-key-title "$(SSH_KEY_TITLE)")
 
 dotfiles:
+	set -euo pipefail
 	if [[ -z "$(REPO)" ]]; then
-	  echo "[error] Invalid REPO"; exit 1; fi
+	  echo "[error] REPO is required (e.g., git@github.com:you/dotfiles.git)"; exit 1; fi
 	chmod +x "$(DOTFILES_SCRIPT)"
 	"$(DOTFILES_SCRIPT)" \
 	  --repo   "$(REPO)" \

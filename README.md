@@ -1,14 +1,14 @@
 # Setup scripts for macOS
 
-**Apple Silicon** のmacOSで、最小限のセットアップを行うためのスクリプトです  
+**Apple Silicon**のmacOSで、最小限のセットアップを行うためのスクリプトです  
 `Use this template`からカスタマイズして利用してください  
 - `setup.sh`: 
-  1. Command Line Toolsのインストール  
-  2. Homebrew, Brewfileのパッケージをインストール  
-  3. SSH鍵を生成してGitHubへ公開鍵を登録  
+  - Command Line Toolsのインストール  
+  - Homebrew, Brewfileのパッケージをインストール  
+  - SSH鍵を生成してGitHubへ公開鍵を登録  
 
 - `dotfiles.sh`: 
-  1. chezmoi の インストールから初期化と反映  
+  - chezmoi の インストールから初期化と反映  
 
 ---
 
