@@ -11,6 +11,16 @@ BREWFILE="${SCRIPT_DIR}/Brewfile"
 log()  { printf "\033[1;32m[setup]\033[0m %s\n" "$*"; }
 err()  { printf "\033[1;31m[error]\033[0m %s\n" "$*" >&2; }
 
+started_agent_pid=""
+cleanup_agent() {
+  if [[ -n "$started_agent_pid" ]]; then
+    log "ssh-agent: stopping (pid=$started_agent_pid)"
+    ssh-agent -k >/dev/null 2>&1 || true
+  fi
+}
+trap 'code=$?; cleanup_agent; err "Failed at line $LINENO: $BASH_COMMAND (exit $code)"; exit $code' ERR
+trap 'cleanup_agent' EXIT
+
 # OSの判定とBrewfileの存在確認
 [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || { err "This script is only for Apple Silicon macOS"; exit 1; }
 [[ -f "$BREWFILE" ]] || { err "Brewfile is required: $BREWFILE"; exit 1; }
@@ -60,27 +70,16 @@ else
   ssh-keygen -t ed25519 -C "$SSH_KEY_TITLE" -f "$SSH_KEY_PATH" -N ""
   log "SSH key generated."
 fi
+
 chmod 600 "${SSH_KEY_PATH}"
 chmod 644 "${SSH_KEY_PATH}.pub"
 
-started_agent_pid=""
-use_existing_agent=false
 if [[ -n "${SSH_AUTH_SOCK:-}" ]] && ssh-add -l >/dev/null 2>&1; then
-  use_existing_agent=true
   log "ssh-agent: using existing agent"
 else
   log "ssh-agent: starting new agent"
   eval "$(ssh-agent -s)" >/dev/null
   started_agent_pid="$SSH_AGENT_PID"
-  # 終了時に起動したプロセスを停止
-  cleanup_agent() {
-    if [[ -n "$started_agent_pid" ]]; then
-      log "ssh-agent: stopping (pid=$started_agent_pid)"
-      ssh-agent -k >/dev/null 2>&1 || true
-    fi
-  }
-  trap 'code=$?; cleanup_agent; err "Failed at line $LINENO: $BASH_COMMAND (exit $code)"; exit $code' ERR
-  trap 'cleanup_agent' EXIT
 fi
 
 if ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"; then
@@ -99,5 +98,12 @@ else
   gh ssh-key add "${SSH_KEY_PATH}.pub" --title "${SSH_KEY_TITLE}"
   log "GitHub: SSH key registered."
 fi
+
+# 6. macOSの初期設定を変更
+log "Applying macOS preferences..."
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true # 拡張子を常に表示
+defaults write com.apple.finder AppleShowAllFiles -bool true    # 隠しファイルを表示
+killall Finder >/dev/null 2>&1 || true
+log "macOS preferences applied."
 
 log "Setup completed."
