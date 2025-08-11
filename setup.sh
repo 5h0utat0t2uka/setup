@@ -3,7 +3,7 @@ set -euo pipefail
 
 GIT_HOSTNAME="github.com"
 SSH_KEY_TITLE=""
-SSH_KEY_PATH="${HOME}/.ssh/id_ed25519"
+SSH_KEY_PATH="${HOME}/.ssh/id_ed25519_github"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BREW="/opt/homebrew/bin/brew"
 BREWFILE="${SCRIPT_DIR}/Brewfile"
@@ -101,8 +101,8 @@ fi
 
 # 6. macOSの初期設定を変更
 log "Applying macOS preferences..."
-defaults write NSGlobalDomain AppleShowAllExtensions -bool true # 拡張子を常に表示
-defaults write com.apple.finder AppleShowAllFiles -bool true    # 隠しファイルを表示
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true # 拡張子を表示
+defaults write com.apple.finder AppleShowAllFiles -bool true    # 不可視ファイルを表示
 killall Finder >/dev/null 2>&1 || true
 log "macOS preferences applied."
 

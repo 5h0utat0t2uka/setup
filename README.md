@@ -6,12 +6,18 @@
   - Command Line Toolsのインストール  
   - Homebrew, Brewfileのパッケージをインストール  
   - SSH鍵を生成してGitHubへ公開鍵を登録  
-  - macOSの初期設定の変更（拡張子と不可視ファイルを表示）
+  - macOSのplist更新（拡張子と不可視ファイルを表示）  
 
 - `dotfiles.sh`: 
   - chezmoi の インストールから初期化と反映  
 
 ---
+
+## 事前準備
+古い環境のHomebrewのパッケージをまとめてインストールする場合は、以下を実行して`Brewfile`を作成して利用してください
+``` shell
+brew bundle dump --global
+```
 
 ## リポジトリをクローンして実行する場合
 ``` shell
