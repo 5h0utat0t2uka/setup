@@ -36,8 +36,9 @@ fi
 
 # 2) Homebrew（ここだけが Homebrew インストール元）
 if ! /opt/homebrew/bin/brew -v >/dev/null 2>&1; then
-  echo "[bootstrap] Installing Homebrew..."
-  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  echo "[bootstrap] Installing Homebrew (will prompt for your password once)..."
+  sudo -v  # パスワード入力を先に促す（5分程度キャッシュ）
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 brew analytics off || true
