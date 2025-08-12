@@ -28,7 +28,10 @@ brew bundle dump --global
 > [!TIP]
 > 実行中にパスワードの入力を求められます
 ``` shell
-bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) --owner <OWNER> --branch <BRANCH>
+bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) \
+  --owner <OWNER> \
+  --branch <BRANCH> \
+  --dest "$HOME/setup"
 ```
 
 2. ホームディレクトリ直下にこのリポジトリがクローンされているので、その中にある`Brewfile`を編集

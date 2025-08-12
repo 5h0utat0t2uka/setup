@@ -41,24 +41,38 @@ brew analytics off || true
 brew update
 
 # git clone
-if [[ ! -d "$DEST/.git" ]]; then
-  echo "[bootstrap] Cloning repo to ${DEST} ..."
-  git clone "https://github.com/${OWNER}/setup.git" --branch "$BRANCH" --single-branch "$DEST"
-else
+if [[ -d "$DEST/.git" ]]; then
   echo "[bootstrap] Repo already exists at ${DEST} (skip clone)"
+elif [[ -e "$DEST" ]]; then
+  if [[ -d "$DEST" ]]; then
+    if [[ -z "$(ls -A "$DEST" 2>/dev/null)" ]]; then
+      echo "[bootstrap] Cloning into existing empty dir: ${DEST}"
+      git clone "https://github.com/${OWNER}/setup.git" --branch "$BRANCH" --single-branch --depth=1 "$DEST"
+    else
+      echo "[bootstrap] ERROR: ${DEST} exists and is not empty." >&2
+      exit 1
+    fi
+  else
+    echo "[bootstrap] ERROR: ${DEST} exists but is not a directory." >&2
+    exit 1
+  fi
+else
+  echo "[bootstrap] Cloning repo to ${DEST} ..."
+  mkdir -p "$(dirname "$DEST")"
+  git clone "https://github.com/${OWNER}/setup.git" --branch "$BRANCH" --single-branch --depth=1 "$DEST"
 fi
 
-cat <<'EOS'
+cat <<EOS
 
 ✅ Setup repo is ready.
 
 Next steps:
   1) Review/modify Brewfile if needed:
-       cd "$HOME/setup" && $EDITOR Brewfile
+       cd "$DEST" && \$EDITOR Brewfile
 
   2) Run setup via Make (SSH鍵生成が不要なら NO_SSH=1):
-       cd "$HOME/setup" && make setup
+       cd "$DEST" && make setup
        # or: make setup NO_SSH=1
-       #     make setup SSH_KEY_TITLE="github-$(hostname)-$(date +%Y%m%d)"
+       #     make setup SSH_KEY_TITLE="github-\$(hostname)-\$(date +%Y%m%d)"
 
 EOS
