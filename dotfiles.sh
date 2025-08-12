@@ -33,8 +33,8 @@ done
 log() { printf "\033[1;34m[dotfiles]\033[0m %s\n" "$*"; }
 err() { printf "\033[1;31m[error]\033[0m %s\n" "$*" >&2; }
 
-# --- 環境チェック（brew/chezmoi を PATH なしでも確実に見つける） ---
-[[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || { err "Apple Silicon macOS専用"; exit 1; }
+# OSチェック
+[[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || { err "This script only works on Apple Silicon macOS."; exit 1; }
 
 BREW="$(command -v brew || true)"
 if [[ -z "$BREW" && -x /opt/homebrew/bin/brew ]]; then
@@ -42,29 +42,21 @@ if [[ -z "$BREW" && -x /opt/homebrew/bin/brew ]]; then
 fi
 [[ -x "${BREW:-/nonexistent}" ]] || { err "Homebrew が見つかりません。先に setup.sh / make setup を実行してください。"; exit 1; }
 
-# Homebrew の環境をこのシェルだけに適用（.zshrc が無くてもOK）
 eval "$("$BREW" shellenv)"
-
-# chezmoi が無ければ入れる
 if ! command -v chezmoi >/dev/null 2>&1; then
   log "Installing chezmoi via Homebrew..."
   brew install chezmoi
 fi
 
 CHEZ_SRC="$HOME/.local/share/chezmoi"
-
-# --- SSH URL を使うなら軽く接続チェック（任意だが親切） ---
 if [[ "$REPO" == git@github.com:* ]]; then
   if ! ssh -o BatchMode=yes -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
     log "SSH 接続テストに失敗した可能性があります（Permission denied など）。"
     log "必要なら: ssh-add ~/.ssh/id_ed25519_github や ~/.ssh/config の Host github.com 設定を確認してください。"
   fi
 fi
-
 if [[ -d "$CHEZ_SRC/.git" ]]; then
   log "chezmoi: already initialized"
-
-  # リモート一致チェック（異なるなら明示）
   current_url="$(chezmoi git config --get remote.origin.url || true)"
   if [[ -n "$current_url" && "$current_url" != "$REPO" ]]; then
     err "既存の chezmoi リポが異なるURLを指しています。

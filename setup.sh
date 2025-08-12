@@ -6,7 +6,6 @@ BREW="/opt/homebrew/bin/brew"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BREWFILE="${REPO_DIR}/Brewfile"
 
-# 既定: SSH鍵を作る（--no-ssh で無効化）
 DO_SSH=1
 SSH_KEY_PATH="${HOME}/.ssh/id_ed25519_github"
 SSH_KEY_TITLE=""
@@ -34,10 +33,9 @@ log() { printf "\033[1;32m[setup]\033[0m %s\n" "$*"; }
 err() { printf "\033[1;31m[error]\033[0m %s\n" "$*" >&2; }
 trap 'code=$?; err "Failed at line $LINENO: $BASH_COMMAND (exit $code)"; exit $code' ERR
 
-# 0) OSチェック
-[[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || { err "Apple Silicon macOS専用です"; exit 1; }
+# OSチェック
+[[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || { err "This script only works on Apple Silicon macOS."; exit 1; }
 
-# 1) Homebrew 必須（bootstrap を先に実行してもらう）
 if ! "$BREW" -v >/dev/null 2>&1; then
   err "Homebrew not found. Run bootstrap first:
   bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) --owner <OWNER> --branch <BRANCH>"
@@ -45,16 +43,12 @@ fi
 eval "$("$BREW" shellenv)"
 brew analytics off || true
 brew update
-
-# 2) Brewfile があれば適用（無ければスキップ）
 if [[ -f "$BREWFILE" ]]; then
   log "Applying Brewfile..."
   brew bundle --file="$BREWFILE"
 else
   log "Brewfile not found (skip bundle)"
 fi
-
-# 3) gh 認証（HTTPS指定、鍵はここでは作らない）
 if ! gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
   log "gh auth login (HTTPS, web flow)"
   gh auth login --hostname "$GIT_HOSTNAME" --web --git-protocol https \
@@ -63,7 +57,7 @@ else
   log "gh auth: OK"
 fi
 
-# 4) SSH鍵（~/.ssh/config などの dotfiles は触らない）
+# SSH鍵生成
 if [[ "$DO_SSH" -eq 1 ]]; then
   mkdir -p "${HOME}/.ssh"; chmod 700 "${HOME}/.ssh"
 
@@ -81,7 +75,6 @@ if [[ "$DO_SSH" -eq 1 ]]; then
 
   chmod 600 "${SSH_KEY_PATH}"; chmod 644 "${SSH_KEY_PATH}.pub"
 
-  # Keychain/agent に読み込み（~/.ssh/config には触れない）
   if ! ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"; then
     log "Adding key to keychain"
     ssh-add --apple-use-keychain "${SSH_KEY_PATH}" || ssh-add "${SSH_KEY_PATH}" || true
@@ -89,7 +82,7 @@ if [[ "$DO_SSH" -eq 1 ]]; then
     log "SSH key already loaded"
   fi
 
-  # GitHub に公開鍵登録（重複チェック＋scope確保）
+  # SSH公開鍵登録
   gh auth refresh -h "$GIT_HOSTNAME" -s admin:public_key || true
   PUB="$(cat "${SSH_KEY_PATH}.pub")"
   if gh ssh-key list --json key --jq '.[].key' | grep -qxF "$PUB"; then
@@ -98,8 +91,6 @@ if [[ "$DO_SSH" -eq 1 ]]; then
     log "Registering public key to GitHub"
     gh ssh-key add "${SSH_KEY_PATH}.pub" --title "${SSH_KEY_TITLE}"
   fi
-
-  # 5) このリポが git 管理なら HTTPS → SSH に切替
   if git -C "$REPO_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     url="$(git -C "$REPO_DIR" remote get-url origin 2>/dev/null || true)"
     if [[ "$url" =~ ^https://github\.com/([^/]+)/([^/]+?)(\.git)?$ ]]; then
@@ -111,8 +102,6 @@ if [[ "$DO_SSH" -eq 1 ]]; then
       log "Origin is not HTTPS GitHub (skip switching): $url"
     fi
   fi
-
-  # 動作確認（任意）
   log "Testing SSH connectivity (optional)"
   ssh -o StrictHostKeyChecking=accept-new -T git@github.com || true
 else

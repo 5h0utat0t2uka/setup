@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 引数:
-#   --owner <GitHub owner>  (必須)  例: --owner yourname
-#   --branch <branch>       (任意)  例: --branch main (既定: main)
-#   --dest <dir>            (任意)  例: --dest "$HOME/setup" (既定)
 OWNER=""
 BRANCH="main"
 DEST="${HOME}/setup"
@@ -27,14 +23,14 @@ done
 echo "[bootstrap] Target repo: https://github.com/${OWNER}/setup (branch=${BRANCH})"
 echo "[bootstrap] Destination: ${DEST}"
 
-# 1) Command Line Tools（CLT）
+# Command Line Tools
 if ! xcode-select -p >/dev/null 2>&1; then
   echo "[bootstrap] Installing Xcode Command Line Tools..."
   xcode-select --install || true
   until xcode-select -p >/dev/null 2>&1; do sleep 5; done
 fi
 
-# 2) Homebrew（ここだけが Homebrew インストール元）
+# Homebrew
 if ! /opt/homebrew/bin/brew -v >/dev/null 2>&1; then
   echo "[bootstrap] Installing Homebrew (will prompt for your password once)..."
   sudo -v  # パスワード入力を先に促す（5分程度キャッシュ）
@@ -44,7 +40,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 brew analytics off || true
 brew update
 
-# 3) 公開リポを HTTPS で clone（存在すればスキップ）
+# git clone
 if [[ ! -d "$DEST/.git" ]]; then
   echo "[bootstrap] Cloning repo to ${DEST} ..."
   git clone "https://github.com/${OWNER}/setup.git" --branch "$BRANCH" --single-branch "$DEST"

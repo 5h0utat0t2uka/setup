@@ -37,9 +37,7 @@ cd ~/setup
 vi Brewfile
 ```
 
-その後以下のコマンドで`setup.sh`を実効
-> [!TIP]
-> 実行中にパスワードの入力を求められます
+その後以下のコマンドで`setup.sh`を実効  
 ``` shell
 # SSH鍵の生成が必要な場合
 make setup
