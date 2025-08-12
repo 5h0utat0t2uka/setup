@@ -36,16 +36,16 @@ help:
 setup:
 	set -euo pipefail
 	chmod +x "$(SETUP_SCRIPT)"
-	ARGS=()
-	if [[ "$(NO_SSH)" = "1" ]]; then ARGS+=("--no-ssh"); fi
-	if [[ -n "$(SSH_KEY_TITLE)" ]]; then ARGS+=("--ssh-key-title" "$(SSH_KEY_TITLE)"); fi
-	"$(SETUP_SCRIPT)" "$${ARGS[@]}"
+	"$(SETUP_SCRIPT)" \
+	  $(if $(filter 1,$(NO_SSH)),--no-ssh) \
+	  $(if $(SSH_KEY_TITLE),--ssh-key-title "$(SSH_KEY_TITLE)")
 
 dotfiles:
 	set -euo pipefail
 	if [[ -z "$(REPO)" ]]; then
 	  echo "[error] REPO is required (e.g., git@github.com:you/dotfiles.git)"; exit 1; fi
 	chmod +x "$(DOTFILES_SCRIPT)"
-	ARGS=(--repo "$(REPO)")
-	if [[ -n "$(BRANCH)" ]]; then ARGS+=(--branch "$(BRANCH)"); fi
-	"$(DOTFILES_SCRIPT)" "$${ARGS[@]}"
+	"$(DOTFILES_SCRIPT)" \
+	  --repo "$(REPO)" \
+	  $(if $(BRANCH),--branch "$(BRANCH)")
+

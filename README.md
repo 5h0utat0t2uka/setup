@@ -25,7 +25,8 @@ brew bundle dump --global
 ## 利用方法
 1. 新しい環境のターミナルで`curl`から直接`bootstrap.sh`を実効
 ``` shell
-curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh | bash -s -- --owner <OWNER> --branch <BRANCH>
+bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) --owner <OWNER> --branch <BRANCH>
+
 ```
 
 2. ホームディレクトリ直下に`setup`がクローンされるので、その中にある`Brewfile`を編集
