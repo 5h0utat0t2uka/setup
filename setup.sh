@@ -40,7 +40,7 @@ trap 'code=$?; err "Failed at line $LINENO: $BASH_COMMAND (exit $code)"; exit $c
 # 1) Homebrew 必須（bootstrap を先に実行してもらう）
 if ! "$BREW" -v >/dev/null 2>&1; then
   err "Homebrew not found. Run bootstrap first:
-  curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh | bash -s -- --owner <OWNER> --branch <BRANCH>"
+  bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) --owner <OWNER> --branch <BRANCH>"
 fi
 eval "$("$BREW" shellenv)"
 brew analytics off || true

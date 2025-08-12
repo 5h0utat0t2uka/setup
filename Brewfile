@@ -6,7 +6,6 @@ brew "gnupg"
 brew "jq"
 brew "mise"
 brew "powerlevel10k"
-brew "tmux"
 brew "tree"
 
 cask "chatgpt"
