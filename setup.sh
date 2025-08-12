@@ -2,108 +2,129 @@
 set -euo pipefail
 
 GIT_HOSTNAME="github.com"
-SSH_KEY_TITLE=""
-SSH_KEY_PATH="${HOME}/.ssh/id_ed25519_github"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BREW="/opt/homebrew/bin/brew"
-BREWFILE="${SCRIPT_DIR}/Brewfile"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BREWFILE="${REPO_DIR}/Brewfile"
 
-log()  { printf "\033[1;32m[setup]\033[0m %s\n" "$*"; }
-err()  { printf "\033[1;31m[error]\033[0m %s\n" "$*" >&2; }
+# 既定: SSH鍵を作る（--no-ssh で無効化）
+DO_SSH=1
+SSH_KEY_PATH="${HOME}/.ssh/id_ed25519_github"
+SSH_KEY_TITLE=""
 
-started_agent_pid=""
-cleanup_agent() {
-  if [[ -n "$started_agent_pid" ]]; then
-    log "ssh-agent: stopping (pid=$started_agent_pid)"
-    ssh-agent -k >/dev/null 2>&1 || true
-  fi
+usage() {
+  cat >&2 <<'EOT'
+Usage: ./setup.sh [--no-ssh] [--ssh-key-title "<title>"]
+
+Options:
+  --no-ssh             SSH鍵の生成・登録・remote切替をスキップ
+  --ssh-key-title STR  鍵コメント（既定: github-<hostname>-<YYYYMMDD>）
+EOT
+  exit 2
 }
-trap 'code=$?; cleanup_agent; err "Failed at line $LINENO: $BASH_COMMAND (exit $code)"; exit $code' ERR
-trap 'cleanup_agent' EXIT
 
-# OSの判定とBrewfileの存在確認
-[[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || { err "This script is only for Apple Silicon macOS"; exit 1; }
-[[ -f "$BREWFILE" ]] || { err "Brewfile is required: $BREWFILE"; exit 1; }
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-ssh) DO_SSH=0; shift ;;
+    --ssh-key-title) SSH_KEY_TITLE="${2-}"; shift 2 ;;
+    *) echo "[setup] Unknown arg: $1" >&2; usage ;;
+  esac
+done
 
-# 1. Command Line Toolsの確認とインストール
-if xcode-select -p >/dev/null 2>&1; then
-  log "Command Line Tools: OK"
+log() { printf "\033[1;32m[setup]\033[0m %s\n" "$*"; }
+err() { printf "\033[1;31m[error]\033[0m %s\n" "$*" >&2; }
+trap 'code=$?; err "Failed at line $LINENO: $BASH_COMMAND (exit $code)"; exit $code' ERR
+
+# 0) OSチェック
+[[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]] || { err "Apple Silicon macOS専用です"; exit 1; }
+
+# 1) Homebrew 必須（bootstrap を先に実行してもらう）
+if ! "$BREW" -v >/dev/null 2>&1; then
+  err "Homebrew not found. Run bootstrap first:
+  curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh | bash -s -- --owner <OWNER> --branch <BRANCH>"
+fi
+eval "$("$BREW" shellenv)"
+brew analytics off || true
+brew update
+
+# 2) Brewfile があれば適用（無ければスキップ）
+if [[ -f "$BREWFILE" ]]; then
+  log "Applying Brewfile..."
+  brew bundle --file="$BREWFILE"
 else
-  log "Installing Command Line Tools..."
-  xcode-select --install || true
-  until xcode-select -p >/dev/null 2>&1; do sleep 5; done
-  log "Command Line Tools: installed"
+  log "Brewfile not found (skip bundle)"
 fi
 
-# 2. Homebrewの確認とインストール
-if [[ -x "$BREW" ]]; then
-  log "Homebrew: OK"
+# 3) gh 認証（HTTPS指定、鍵はここでは作らない）
+if ! gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
+  log "gh auth login (HTTPS, web flow)"
+  gh auth login --hostname "$GIT_HOSTNAME" --web --git-protocol https \
+    --scopes "repo,read:org,admin:public_key"
 else
-  log "Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  log "Homebrew: installed"
+  log "gh auth: OK"
 fi
-eval "$($BREW shellenv)"
-brew tap homebrew/bundle >/dev/null 2>&1 || true
-log "Applying Brewfile -> brew bundle --file=\"$BREWFILE\" --no-lock"
-brew bundle --file="$BREWFILE" --no-lock
 
-# 3. GitHubの認証
-if gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
-  log "GitHub auth: OK"
+# 4) SSH鍵（~/.ssh/config などの dotfiles は触らない）
+if [[ "$DO_SSH" -eq 1 ]]; then
+  mkdir -p "${HOME}/.ssh"; chmod 700 "${HOME}/.ssh"
+
+  if [[ -z "$SSH_KEY_TITLE" ]]; then
+    host="$(hostname | tr -cd '[:alnum:]-')"
+    SSH_KEY_TITLE="github-${host}-$(date +%Y%m%d)"
+  fi
+
+  if [[ ! -f "${SSH_KEY_PATH}" || ! -f "${SSH_KEY_PATH}.pub" ]]; then
+    log "Generating SSH key: ${SSH_KEY_PATH} (no passphrase, comment='${SSH_KEY_TITLE}')"
+    ssh-keygen -t ed25519 -C "$SSH_KEY_TITLE" -f "$SSH_KEY_PATH" -N ""
+  else
+    log "SSH key exists: ${SSH_KEY_PATH}"
+  fi
+
+  chmod 600 "${SSH_KEY_PATH}"; chmod 644 "${SSH_KEY_PATH}.pub"
+
+  # Keychain/agent に読み込み（~/.ssh/config には触れない）
+  if ! ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"; then
+    log "Adding key to keychain"
+    ssh-add --apple-use-keychain "${SSH_KEY_PATH}" || ssh-add "${SSH_KEY_PATH}" || true
+  else
+    log "SSH key already loaded"
+  fi
+
+  # GitHub に公開鍵登録（重複チェック＋scope確保）
+  gh auth refresh -h "$GIT_HOSTNAME" -s admin:public_key || true
+  PUB="$(cat "${SSH_KEY_PATH}.pub")"
+  if gh ssh-key list --json key --jq '.[].key' | grep -qxF "$PUB"; then
+    log "GitHub: same public key already registered"
+  else
+    log "Registering public key to GitHub"
+    gh ssh-key add "${SSH_KEY_PATH}.pub" --title "${SSH_KEY_TITLE}"
+  fi
+
+  # 5) このリポが git 管理なら HTTPS → SSH に切替
+  if git -C "$REPO_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    url="$(git -C "$REPO_DIR" remote get-url origin 2>/dev/null || true)"
+    if [[ "$url" =~ ^https://github\.com/([^/]+)/([^/]+?)(\.git)?$ ]]; then
+      owner="${BASH_REMATCH[1]}"; name="${BASH_REMATCH[2]}"
+      new="git@github.com:${owner}/${name}.git"
+      log "Switching origin to SSH: $new"
+      git -C "$REPO_DIR" remote set-url origin "$new"
+    else
+      log "Origin is not HTTPS GitHub (skip switching): $url"
+    fi
+  fi
+
+  # 動作確認（任意）
+  log "Testing SSH connectivity (optional)"
+  ssh -o StrictHostKeyChecking=accept-new -T git@github.com || true
 else
-  log "Running 'gh auth login'..."
-  gh auth login --hostname "$GIT_HOSTNAME"
+  log "Skipping SSH steps (--no-ssh)"
 fi
 
-# 4. SSH keyの生成と登録
-mkdir -p "${HOME}/.ssh"; chmod 700 "${HOME}/.ssh"
-if [[ -z "$SSH_KEY_TITLE" ]]; then
-  HOST_CLEAN="$(hostname | tr -cd '[:alnum:]-')"
-  DATE_STR="$(date +%Y%m%d)"
-  SSH_KEY_TITLE="github-${HOST_CLEAN}-${DATE_STR}"
-fi
-if [[ -f "${SSH_KEY_PATH}" && -f "${SSH_KEY_PATH}.pub" ]]; then
-  log "SSH key already exists: ${SSH_KEY_PATH}"
-else
-  log "Generating SSH key (comment='${SSH_KEY_TITLE}')..."
-  ssh-keygen -t ed25519 -C "$SSH_KEY_TITLE" -f "$SSH_KEY_PATH" -N ""
-  log "SSH key generated."
-fi
+cat <<'EOS'
 
-chmod 600 "${SSH_KEY_PATH}"
-chmod 644 "${SSH_KEY_PATH}.pub"
+✅ Setup done.
 
-if [[ -n "${SSH_AUTH_SOCK:-}" ]] && ssh-add -l >/dev/null 2>&1; then
-  log "ssh-agent: using existing agent"
-else
-  log "ssh-agent: starting new agent"
-  eval "$(ssh-agent -s)" >/dev/null
-  started_agent_pid="$SSH_AGENT_PID"
-fi
+Next steps:
+  1) RYou can now apply dotfiles with your preferred method (e.g., chezmoi).
 
-if ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"; then
-  log "ssh-agent: key already loaded"
-else
-  log "ssh-agent: adding key to agent"
-  ssh-add --apple-use-keychain "${SSH_KEY_PATH}" || ssh-add "${SSH_KEY_PATH}"
-fi
+EOS
 
-# 5. GitHubに公開鍵を登録
-PUB_KEY_CONTENT="$(cat "${SSH_KEY_PATH}.pub")"
-if gh ssh-key list --json key --jq '.[].key' | grep -qxF "$PUB_KEY_CONTENT"; then
-  log "GitHub: same public key already registered."
-else
-  log "Registering public key to GitHub with title: ${SSH_KEY_TITLE}"
-  gh ssh-key add "${SSH_KEY_PATH}.pub" --title "${SSH_KEY_TITLE}"
-  log "GitHub: SSH key registered."
-fi
-
-# 6. macOSの初期設定を変更
-log "Applying macOS preferences..."
-defaults write NSGlobalDomain AppleShowAllExtensions -bool true # 拡張子を表示
-defaults write com.apple.finder AppleShowAllFiles -bool true    # 不可視ファイルを表示
-killall Finder >/dev/null 2>&1 || true
-log "macOS preferences applied."
-
-log "Setup completed."

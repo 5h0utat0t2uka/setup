@@ -2,11 +2,14 @@
 
 **Apple Silicon**のmacOSで、最小限のセットアップを行うためのスクリプトです  
 `Use this template`からカスタマイズして利用してください  
-- `setup.sh`: 
+- `bootstrap.sh`:  
   - Command Line Toolsのインストール  
-  - Homebrew, Brewfileのパッケージをインストール  
+  - Homebrewのインストール  
+  - リポジトリのクローン  
+
+- `setup.sh`: 
+  - Brewfileのパッケージをインストール  
   - SSH鍵を生成してGitHubへ公開鍵を登録  
-  - macOSのplist更新（拡張子と不可視ファイルを表示）  
 
 - `dotfiles.sh`: 
   - chezmoi の インストールから初期化と反映  
@@ -19,36 +22,24 @@
 brew bundle dump --global
 ```
 
-## リポジトリをクローンして実行する場合
+## 利用方法
+1. 新しい環境のターミナルで`curl`から直接`bootstrap.sh`を実効
 ``` shell
-cd ~
-git clone https://github.com/<your-name>/setup.git  
-cd setup
+curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh | bash -s -- --owner <OWNER> --branch <BRANCH>
 ```
 
-### セットアップ
+2. ホームディレクトリ直下に`setup`がクローンされるので、その中にある`Brewfile`を編集
 ``` shell
-# SSH_KEY_TITLEは省略出来ます
-make setup SSH_KEY_TITLE="github-$(hostname)-$(date +%Y%m%d)"
+cd ~/setup
+vi Brewfile
 ```
 
-### ドットファイル
+3. 以下のコマンドで`setup.sh`を実効
 ``` shell
-make dotfiles REPO="git@github.com:you/dotfiles.git" BRANCH="main"
-```
-
-## 直接実行する場合
-### セットアップ
-``` shell
-bash <(curl -fsSL https://raw.githubusercontent.com/<your-name>/setup/main/setup.sh) \
-  --ssh-key-title "github-$(hostname)-$(date +%Y%m%d)"
-```
-
-### ドットファイル
-``` shell
-bash <(curl -fsSL https://raw.githubusercontent.com/<your-name>/setup/main/dotfiles.sh) \
-  --repo "git@github.com:you/dotfiles.git" \
-  --branch "main"
+# SSH鍵の生成が必要な場合
+make setup
+# SSH鍵の生成が不要な場合
+make setup NO_SSH=1
 ```
 
 > [!CAUTION]
