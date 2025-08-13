@@ -26,14 +26,14 @@ brew bundle dump --global
 ---  
 
 1. 新しい環境のターミナルで`curl`から直接`bootstrap.sh`を実効
-> [!TIP]
-> 実行中にパスワードの入力を求められます
 ``` shell
 bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) \
   --owner <OWNER> \
   --branch <BRANCH> \
   --dest "$HOME/setup"
 ```
+> [!NOTE]
+> 実行中にパスワードの入力を求められます
 
 2. ホームディレクトリ直下にリポジトリがクローンされているので、以下のコマンドで`setup.sh`を実効  
 ``` shell
