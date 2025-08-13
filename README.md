@@ -12,16 +12,16 @@ brew bundle dump --global
 ## 利用方法
 以下の3つのスクリプトで構成されているので、必要なものを実行してください
 1. `bootstrap.sh`:  
-  - Command Line Toolsのインストール  
-  - Homebrewのインストール  
-  - Brewfileのパッケージをインストール  
+   - Command Line Toolsのインストール  
+   - Homebrewのインストール  
+   - Brewfileのパッケージをインストール  
 
 2. `setup.sh`: 
-  - SSH鍵を生成してGitHubへ公開鍵を登録()  
-  - macOSのplistを更新  
+   - SSH鍵を生成してGitHubへ公開鍵を登録()  
+   - macOSのplistを更新  
 
 3. `dotfiles.sh`: 
-  - chezmoi の インストールから初期化と反映  
+   - chezmoi の インストールから初期化と反映  
 
 ---  
 
