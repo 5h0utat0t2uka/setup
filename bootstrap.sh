@@ -4,9 +4,13 @@ set -euo pipefail
 OWNER=""
 BRANCH="main"
 DEST="${HOME}/setup"
+DO_BUNDLE=1
+
+BREW_BIN="/opt/homebrew/bin/brew"
+command -v brew >/dev/null 2>&1 && BREW_BIN="$(command -v brew)"
 
 usage() {
-  echo "Usage: bash bootstrap.sh --owner <OWNER> [--branch main] [--dest \$HOME/setup]" >&2
+  echo "Usage: bash bootstrap.sh --owner <OWNER> [--branch main] [--dest \$HOME/setup] [--no-bundle]" >&2
   exit 2
 }
 
@@ -15,6 +19,7 @@ while [[ $# -gt 0 ]]; do
     --owner)  OWNER="${2-}"; shift 2 ;;
     --branch) BRANCH="${2-}"; shift 2 ;;
     --dest)   DEST="${2-}";  shift 2 ;;
+    --no-bundle) DO_BUNDLE=0; shift ;;
     *) echo "[bootstrap] Unknown arg: $1" >&2; usage ;;
   esac
 done
@@ -30,15 +35,7 @@ if ! xcode-select -p >/dev/null 2>&1; then
   until xcode-select -p >/dev/null 2>&1; do sleep 5; done
 fi
 
-# Homebrew
-if ! /opt/homebrew/bin/brew -v >/dev/null 2>&1; then
-  echo "[bootstrap] Installing Homebrew (will prompt for your password once)..."
-  sudo -v  # パスワード入力を先に促す（5分程度キャッシュ）
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-eval "$(/opt/homebrew/bin/brew shellenv)"
-brew analytics off || true
-brew update
+until command -v git >/dev/null 2>&1; do sleep 1; done
 
 # git clone
 if [[ -d "$DEST/.git" ]]; then
@@ -62,15 +59,40 @@ else
   git clone "https://github.com/${OWNER}/setup.git" --branch "$BRANCH" --single-branch --depth=1 "$DEST"
 fi
 
+# Homebrew
+if ! "$BREW_BIN" -v >/dev/null 2>&1; then
+  echo "[bootstrap] Installing Homebrew (will prompt for your password once)..."
+  sudo -v  # パスワード入力を先に促す（5分程度キャッシュ）
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+
+eval "$($BREW_BIN shellenv)"
+
+export HOMEBREW_NO_ENV_HINTS=1 HOMEBREW_NO_AUTO_UPDATE=1
+"$BREW_BIN" analytics off || true
+"$BREW_BIN" update
+
+# Bundle
+if [[ "$DO_BUNDLE" -eq 1 ]]; then
+  BREWFILE="${DEST}/Brewfile"
+  if [[ -f "$BREWFILE" ]]; then
+    echo "[bootstrap] Applying Brewfile at: ${BREWFILE}"
+    "$BREW_BIN" tap homebrew/bundle || true
+    "$BREW_BIN" bundle --file="$BREWFILE"
+  else
+    echo "[bootstrap] Brewfile not found at ${BREWFILE} (skip bundle)"
+  fi
+else
+  echo "[bootstrap] Skipping Brewfile (--no-bundle)"
+fi
+
 cat <<EOS
 
 ✅ Setup repo is ready.
 
 Next steps:
-  1) Review/modify Brewfile if needed:
-       cd "$DEST" && \$EDITOR Brewfile
 
-  2) Run setup via Make (SSH鍵生成が不要なら NO_SSH=1):
+  1) Run setup via Make (SSH鍵生成が不要なら NO_SSH=1):
        cd "$DEST" && make setup
        # or: make setup NO_SSH=1
        #     make setup SSH_KEY_TITLE="github-\$(hostname)-\$(date +%Y%m%d)"

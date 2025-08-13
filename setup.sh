@@ -4,7 +4,6 @@ set -euo pipefail
 GIT_HOSTNAME="github.com"
 BREW="/opt/homebrew/bin/brew"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BREWFILE="${REPO_DIR}/Brewfile"
 
 DO_SSH=1
 SSH_KEY_PATH="${HOME}/.ssh/id_ed25519_github"
@@ -15,7 +14,7 @@ usage() {
 Usage: ./setup.sh [--no-ssh] [--ssh-key-title "<title>"]
 
 Options:
-  --no-ssh             SSH鍵の生成・登録・remote切替をスキップ
+  --no-ssh             SSH鍵の生成・登録・リモート切替をスキップ
   --ssh-key-title STR  鍵コメント（既定: github-<hostname>-<YYYYMMDD>）
 EOT
   exit 2
@@ -41,14 +40,9 @@ if ! "$BREW" -v >/dev/null 2>&1; then
   bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) --owner <OWNER> --branch <BRANCH>"
 fi
 eval "$("$BREW" shellenv)"
-brew analytics off || true
-brew update
-if [[ -f "$BREWFILE" ]]; then
-  log "Applying Brewfile..."
-  brew bundle --file="$BREWFILE"
-else
-  log "Brewfile not found (skip bundle)"
-fi
+
+command -v gh >/dev/null 2>&1 || { err "'gh' not found. Run bootstrap first."; exit 1; }
+
 if ! gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
   log "gh auth login (HTTPS, web flow)"
   gh auth login --hostname "$GIT_HOSTNAME" --web --git-protocol https \
@@ -75,12 +69,19 @@ if [[ "$DO_SSH" -eq 1 ]]; then
 
   chmod 600 "${SSH_KEY_PATH}"; chmod 644 "${SSH_KEY_PATH}.pub"
 
-  if ! ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"; then
+  fp="$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"
+  if ! ssh-add -l 2>/dev/null | grep -q "$fp"; then
     log "Adding key to keychain"
     ssh-add --apple-use-keychain "${SSH_KEY_PATH}" || ssh-add "${SSH_KEY_PATH}" || true
   else
     log "SSH key already loaded"
   fi
+  # if ! ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"; then
+  #   log "Adding key to keychain"
+  #   ssh-add --apple-use-keychain "${SSH_KEY_PATH}" || ssh-add "${SSH_KEY_PATH}" || true
+  # else
+  #   log "SSH key already loaded"
+  # fi
 
   # SSH公開鍵登録
   gh auth refresh -h "$GIT_HOSTNAME" -s admin:public_key || true
@@ -103,17 +104,25 @@ if [[ "$DO_SSH" -eq 1 ]]; then
     fi
   fi
   log "Testing SSH connectivity (optional)"
-  ssh -o StrictHostKeyChecking=accept-new -T git@github.com || true
+  # ssh -o StrictHostKeyChecking=accept-new -T git@github.com || true
+  ssh -o StrictHostKeyChecking=accept-new -T "git@${GIT_HOSTNAME}" || true
+
 else
   log "Skipping SSH steps (--no-ssh)"
 fi
+
+# macOSのplist設定
+defaults write com.apple.finder FXPreferredViewStyle -string "clmv"  # Finderをカラム表示
+defaults write com.apple.finder AppleShowAllFiles -bool true         # Finderに不可視ファイルを表示
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true      # 拡張子を常に表示
+killall Finder || true
 
 cat <<'EOS'
 
 ✅ Setup done.
 
 Next steps:
-  1) RYou can now apply dotfiles with your preferred method (e.g., chezmoi).
+  1) You can now apply dotfiles with your preferred method (e.g., chezmoi).
 
 EOS
 

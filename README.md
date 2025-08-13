@@ -1,10 +1,10 @@
 # Setup scripts for macOS
 
 **Apple Silicon**のmacOSで、最小限のセットアップを行うためのスクリプトです  
-`Use this template`からカスタマイズして利用してください  
 
 ## 事前準備
-古い環境のHomebrewのパッケージをまとめてインストールする場合は、以下を実行して`Brewfile`を作成して利用してください
+1. このリポジトリの`Use this template`から新規のリポジトリを作成してください  
+2. 以下のコマンドで自身の`Brewfile`を作成し、リポジトリ内の`Brewfile`を更新してください  
 ``` shell
 brew bundle dump --global
 ```
@@ -14,10 +14,11 @@ brew bundle dump --global
 1. `bootstrap.sh`:  
   - Command Line Toolsのインストール  
   - Homebrewのインストール  
+  - Brewfileのパッケージをインストール  
 
 2. `setup.sh`: 
-  - Brewfileのパッケージをインストール  
-  - SSH鍵を生成してGitHubへ公開鍵を登録  
+  - SSH鍵を生成してGitHubへ公開鍵を登録()  
+  - macOSのplistを更新  
 
 3. `dotfiles.sh`: 
   - chezmoi の インストールから初期化と反映  
@@ -34,14 +35,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/boots
   --dest "$HOME/setup"
 ```
 
-2. ホームディレクトリ直下にこのリポジトリがクローンされているので、その中にある`Brewfile`を編集
+2. ホームディレクトリ直下にリポジトリがクローンされているので、以下のコマンドで`setup.sh`を実効  
 ``` shell
 cd ~/setup
-vi Brewfile
-```
 
-その後以下のコマンドで`setup.sh`を実効  
-``` shell
 # SSH鍵の生成が必要な場合
 make setup
 # SSH鍵の生成が不要な場合
