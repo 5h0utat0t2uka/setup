@@ -115,6 +115,7 @@ fi
 defaults write com.apple.finder FXPreferredViewStyle -string "clmv"  # Finderをカラム表示
 defaults write com.apple.finder AppleShowAllFiles -bool true         # Finderに不可視ファイルを表示
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true      # 拡張子を常に表示
+defaults write com.apple.screencapture "show-thumbnail" -bool false  # スクリーンショットのフローティング非表示
 killall Finder || true
 
 cat <<'EOS'

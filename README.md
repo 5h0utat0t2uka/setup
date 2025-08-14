@@ -3,8 +3,8 @@
 **Apple Silicon**のmacOSで、最小限のセットアップを行うためのスクリプトです  
 
 ## 事前準備
-1. このリポジトリの`Use this template`から新規のリポジトリを作成してください  
-2. 以下のコマンドで自身の`Brewfile`を作成し、リポジトリ内の`Brewfile`を更新してください  
+1. このリポジトリの`Use this template`から、自身の公開リポジトリを新しく作成してください  
+2. 以下のコマンドで現在の`Brewfile`を作成し、リポジトリ内の`Brewfile`を更新してください  
 ``` shell
 brew bundle dump --global
 ```
