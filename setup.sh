@@ -43,12 +43,39 @@ eval "$("$BREW" shellenv)"
 
 command -v gh >/dev/null 2>&1 || { err "'gh' not found. Run bootstrap first."; exit 1; }
 
+# if ! gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
+#   log "gh auth login (HTTPS, web flow)"
+#   gh auth login --hostname "$GIT_HOSTNAME" --web --git-protocol https \
+#     --scopes "repo,read:org,admin:public_key"
+# else
+#   log "gh auth: OK"
+# fi
+
 if ! gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
   log "gh auth login (HTTPS, web flow)"
   gh auth login --hostname "$GIT_HOSTNAME" --web --git-protocol https \
     --scopes "repo,read:org,admin:public_key"
 else
   log "gh auth: OK"
+fi
+scopes="$(
+  gh api --hostname "$GIT_HOSTNAME" -i /user 2>/dev/null \
+    | awk -F': ' 'BEGIN{IGNORECASE=1}/^x-oauth-scopes:/{gsub(/[[:space:]]/,"",$2); print $2; exit}' \
+    || true
+)"
+
+if [[ -n "$scopes" ]]; then
+  need_ok=1
+  for need in admin:public_key repo read:org; do
+    [[ ",$scopes," == *",$need,"* ]] || { need_ok=0; break; }
+  done
+  if [[ $need_ok -eq 0 ]]; then
+    log "Adding missing token scopes via gh auth refresh"
+    gh auth refresh -h "$GIT_HOSTNAME" -s admin:public_key -s repo -s read:org \
+      || err "gh auth refresh failed; continuing"
+  fi
+else
+  log "Token scopes not detectable; skipping refresh"
 fi
 
 # SSH鍵生成
@@ -112,10 +139,10 @@ else
 fi
 
 # macOSのplist設定
-defaults write com.apple.finder FXPreferredViewStyle -string "clmv"  # Finderをカラム表示
+# defaults write com.apple.finder FXPreferredViewStyle -string "clmv"  # Finderをカラム表示
 defaults write com.apple.finder AppleShowAllFiles -bool true         # Finderに不可視ファイルを表示
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true      # 拡張子を常に表示
-defaults write com.apple.screencapture "show-thumbnail" -bool false  # スクリーンショットのフローティング非表示
+# defaults write com.apple.screencapture "show-thumbnail" -bool false  # スクリーンショットのフローティング非表示
 killall Finder || true
 
 cat <<'EOS'

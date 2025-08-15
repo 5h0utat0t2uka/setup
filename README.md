@@ -3,7 +3,7 @@
 **Apple Silicon**のmacOSで、最小限のセットアップを行うためのスクリプトです  
 
 ## 事前準備
-1. このリポジトリの`Use this template`から、自身の公開リポジトリを新しく作成してください  
+1. このリポジトリの`Use this template`から、**自身の公開リポジトリ**として新しく作成してください  
 2. 以下のコマンドで現在の`Brewfile`を作成し、リポジトリ内の`Brewfile`を更新してください  
 ``` shell
 brew bundle dump --global
@@ -14,18 +14,18 @@ brew bundle dump --global
 1. `bootstrap.sh`:  
    - Command Line Toolsのインストール  
    - Homebrewのインストール  
-   - Brewfileのパッケージをインストール  
+   - `Brewfile`のパッケージをインストール  
 
 2. `setup.sh`: 
-   - SSH鍵を生成してGitHubへ公開鍵を登録()  
-   - macOSのplistを更新  
+   - SSH鍵を生成してGitHubへ公開鍵を登録  
+   - macOSファインダー関連のplistを更新  
 
 3. `dotfiles.sh`: 
-   - chezmoi の インストールから初期化と反映  
+   - `chezmoi`のインストールから初期化と反映  
 
 ---  
 
-1. 新しい環境のターミナルで`curl`から直接`bootstrap.sh`を実効
+1. 新しい環境のターミナルで`curl`から直接`bootstrap.sh`を実行  
 ``` shell
 bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/bootstrap.sh) \
   --owner <OWNER> \
@@ -35,7 +35,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/boots
 > [!NOTE]
 > 実行中にパスワードの入力を求められます
 
-2. ホームディレクトリ直下にリポジトリがクローンされているので、以下のコマンドで`setup.sh`を実効  
+2. ホームディレクトリ直下にリポジトリがクローンされているので、以下のコマンドで`setup.sh`を実行  
 ``` shell
 cd ~/setup
 
@@ -45,7 +45,7 @@ make setup
 make setup NO_SSH=1
 ```
 
-3. 以下のコマンドで`dotfiles.sh`を実効
+3. 以下のコマンドで`dotfiles.sh`を実行  
 ``` shell
 make dotfiles
 ```
