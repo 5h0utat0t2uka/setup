@@ -75,9 +75,15 @@ export HOMEBREW_NO_ENV_HINTS=1 HOMEBREW_NO_AUTO_UPDATE=1
 # Bundle
 if [[ "$DO_BUNDLE" -eq 1 ]]; then
   BREWFILE="${DEST}/Brewfile"
+  # if [[ -f "$BREWFILE" ]]; then
+  #   echo "[bootstrap] Applying Brewfile at: ${BREWFILE}"
+  #   "$BREW_BIN" tap homebrew/bundle || true
+  #   "$BREW_BIN" bundle --file="$BREWFILE"
+  # else
+  #   echo "[bootstrap] Brewfile not found at ${BREWFILE} (skip bundle)"
+  # fi
   if [[ -f "$BREWFILE" ]]; then
     echo "[bootstrap] Applying Brewfile at: ${BREWFILE}"
-    "$BREW_BIN" tap homebrew/bundle || true
     "$BREW_BIN" bundle --file="$BREWFILE"
   else
     echo "[bootstrap] Brewfile not found at ${BREWFILE} (skip bundle)"
