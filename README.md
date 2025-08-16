@@ -3,14 +3,15 @@
 **Apple Silicon**のmacOSで、最小限のセットアップを行うためのスクリプトです  
 
 ## 事前準備
-1. このリポジトリの`Use this template`から、**自身の公開リポジトリ**として新しく作成してください  
+1. このリポジトリの`Use this template`から、**自身の公開リポジトリ**として新しく用意してください  
 2. 以下のコマンドで現在の`Brewfile`を作成し、リポジトリ内の`Brewfile`を更新してください  
 ``` shell
 brew bundle dump --global
 ```
 
 ## 利用方法
-以下の3つのスクリプトで構成されているので、必要なものを実行してください
+以下の3つのスクリプトで構成されているので、必要なものを調整して実行してください  
+少なくとも（1）は全ての環境で共通になるものです
 1. `bootstrap.sh`:  
    - Command Line Toolsのインストール  
    - Homebrewのインストール  
@@ -18,7 +19,7 @@ brew bundle dump --global
 
 2. `setup.sh`: 
    - SSH鍵を生成してGitHubへ公開鍵を登録  
-   - macOSファインダー関連のplistを更新  
+   - macOSのplist関連を更新  
 
 3. `dotfiles.sh`: 
    - `chezmoi`のインストールから初期化と反映  
@@ -33,6 +34,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/setup/<BRANCH>/boots
   --dest "$HOME/setup"
 ```
 > [!NOTE]
+> 実行中にOSからダウンロードの確認を求められます
 > 実行中にパスワードの入力を求められます
 
 2. ホームディレクトリ直下にリポジトリがクローンされているので、以下のコマンドで`setup.sh`を実行  
