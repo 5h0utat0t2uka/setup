@@ -43,14 +43,6 @@ eval "$("$BREW" shellenv)"
 
 command -v gh >/dev/null 2>&1 || { err "'gh' not found. Run bootstrap first."; exit 1; }
 
-# if ! gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
-#   log "gh auth login (HTTPS, web flow)"
-#   gh auth login --hostname "$GIT_HOSTNAME" --web --git-protocol https \
-#     --scopes "repo,read:org,admin:public_key"
-# else
-#   log "gh auth: OK"
-# fi
-
 if ! gh auth status --hostname "$GIT_HOSTNAME" >/dev/null 2>&1; then
   log "gh auth login (HTTPS, web flow)"
   gh auth login --hostname "$GIT_HOSTNAME" --web --git-protocol https \
@@ -103,12 +95,6 @@ if [[ "$DO_SSH" -eq 1 ]]; then
   else
     log "SSH key already loaded"
   fi
-  # if ! ssh-add -l 2>/dev/null | grep -q "$(ssh-keygen -lf "${SSH_KEY_PATH}" | awk '{print $2}')"; then
-  #   log "Adding key to keychain"
-  #   ssh-add --apple-use-keychain "${SSH_KEY_PATH}" || ssh-add "${SSH_KEY_PATH}" || true
-  # else
-  #   log "SSH key already loaded"
-  # fi
 
   # SSH公開鍵登録
   gh auth refresh -h "$GIT_HOSTNAME" -s admin:public_key || true

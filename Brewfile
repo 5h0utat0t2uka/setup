@@ -21,7 +21,7 @@ brew "jq"
 # cask "font-source-han-code-jp"
 # cask "ghostty"
 # cask "google-chrome"
-cask "karabiner-elements"
+cask "karabiner-elements" # USキーボードの場合
 # cask "raycast"
 # cask "slack"
 # cask "visual-studio-code"

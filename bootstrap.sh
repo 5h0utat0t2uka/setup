@@ -67,7 +67,7 @@ else
   done
 
   if [[ ! -d "$DEST/.git" ]]; then
-    # 任意：どうしても git がダメな時だけ ZIP フォールバック
+    # ZIP フォールバック
     echo "[bootstrap] Falling back to tarball download..."
     rm -rf "$DEST"
     mkdir -p "$DEST"
@@ -76,27 +76,6 @@ else
       || { echo "[bootstrap] ERROR: failed to download tarball"; exit 1; }
   fi
 fi
-
-# if [[ -d "$DEST/.git" ]]; then
-#   echo "[bootstrap] Repo already exists at ${DEST} (skip clone)"
-# elif [[ -e "$DEST" ]]; then
-#   if [[ -d "$DEST" ]]; then
-#     if [[ -z "$(ls -A "$DEST" 2>/dev/null)" ]]; then
-#       echo "[bootstrap] Cloning into existing empty dir: ${DEST}"
-#       git clone "https://github.com/${OWNER}/setup.git" --branch "$BRANCH" --single-branch --depth=1 "$DEST"
-#     else
-#       echo "[bootstrap] ERROR: ${DEST} exists and is not empty." >&2
-#       exit 1
-#     fi
-#   else
-#     echo "[bootstrap] ERROR: ${DEST} exists but is not a directory." >&2
-#     exit 1
-#   fi
-# else
-#   echo "[bootstrap] Cloning repo to ${DEST} ..."
-#   mkdir -p "$(dirname "$DEST")"
-#   git clone "https://github.com/${OWNER}/setup.git" --branch "$BRANCH" --single-branch --depth=1 "$DEST"
-# fi
 
 # Homebrew
 if ! "$BREW_BIN" -v >/dev/null 2>&1; then
@@ -129,7 +108,6 @@ cat <<EOS
 ✅ Setup repo is ready.
 
 Next steps:
-
   1) Run setup via Make (SSH鍵生成が不要なら NO_SSH=1):
        cd "$DEST" && make setup
        # or: make setup NO_SSH=1
