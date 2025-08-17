@@ -1,6 +1,6 @@
 # Setup scripts for macOS
 
-**Apple Silicon**のmacOSで、最小限のセットアップを行うためのスクリプトです  
+**Apple Silicon** のmacOSで、同OSの別端末への移行と、クリーンインストールを行う場合を想定した最小限のセットアップを行うためのスクリプトです  
 
 ## 事前準備
 1. このリポジトリの`Use this template`から、**自身の公開リポジトリ**として新しく用意してください  
@@ -11,7 +11,7 @@ brew bundle dump --global
 
 ## 利用方法
 以下の3つのスクリプトで構成されているので、必要なものを調整して実行してください  
-少なくとも（1）は全ての環境で共通になるものです
+少なくとも(1)は全ての環境で共通になるものです
 1. `bootstrap.sh`:  
    - Command Line Toolsのインストール  
    - Homebrewのインストール  

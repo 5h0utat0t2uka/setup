@@ -33,25 +33,27 @@ if ! xcode-select -p >/dev/null 2>&1; then
   echo "[bootstrap] Installing Xcode Command Line Tools (headless)..."
   sudo -v
 
+  # make CLT appear in softwareupdate catalog
   sudo /usr/bin/touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
-  # 中断/終了時に確実に掃除
   trap 'sudo /bin/rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress' EXIT
 
+  # 最も新しい安定版の CLT ラベルを抽出（Beta は除外）
   CLT_LABEL="$(
     /usr/sbin/softwareupdate --list 2>/dev/null \
-      | awk -F"[*] " '/\* Command Line Tools/ {print $2}' \
-      | sed -E 's/^Label: *//; s/^[[:space:]]+|[[:space:]]+$//g' \
+      | LANG=C LC_ALL=C grep -E 'Command Line Tools' \
+      | grep -vi 'beta' \
+      | awk -F': ' '{print ($2 ? $2 : $1)}' \
+      | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' \
       | tail -n1
   )"
 
   if [[ -z "$CLT_LABEL" ]]; then
     echo "[bootstrap] ERROR: Command Line Tools label not found via softwareupdate." >&2
-    echo "          Please retry, or install manually once and rerun." >&2
+    echo "          Try: 'softwareupdate --list' to inspect available labels." >&2
     exit 1
   fi
 
   echo "[bootstrap] Installing: $CLT_LABEL"
-  # リトライを軽く入れる（ネットワーク混雑対策）
   tries=0
   until sudo /usr/sbin/softwareupdate --install "$CLT_LABEL" --verbose; do
     tries=$((tries+1))
@@ -59,14 +61,18 @@ if ! xcode-select -p >/dev/null 2>&1; then
     echo "[bootstrap] Retrying CLT install ($tries/3)..." && sleep 5
   done
 
-  # 正常終了時も掃除（trapがあるので冪等）
-  sudo /bin/rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+  # 念のため、インストール先が選ばれていなければ指定
+  if [[ -d "/Library/Developer/CommandLineTools" ]]; then
+    sudo /usr/bin/xcode-select --switch /Library/Developer/CommandLineTools >/dev/null 2>&1 || true
+  fi
 
+  # sanity check
   if ! xcode-select -p >/dev/null 2>&1; then
     echo "[bootstrap] ERROR: CLT seems not installed yet." >&2
     exit 1
   fi
 fi
+
 
 # Command Line Tools
 # if ! xcode-select -p >/dev/null 2>&1; then
