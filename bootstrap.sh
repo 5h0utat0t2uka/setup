@@ -28,58 +28,12 @@ done
 echo "[bootstrap] Target repo: https://github.com/${OWNER}/setup (branch=${BRANCH})"
 echo "[bootstrap] Destination: ${DEST}"
 
-# Command Line Tools (headless)
-if ! xcode-select -p >/dev/null 2>&1; then
-  echo "[bootstrap] Installing Xcode Command Line Tools (headless)..."
-  sudo -v
-
-  # make CLT appear in softwareupdate catalog
-  sudo /usr/bin/touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
-  trap 'sudo /bin/rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress' EXIT
-
-  # 最も新しい安定版の CLT ラベルを抽出（Beta は除外）
-  CLT_LABEL="$(
-    /usr/sbin/softwareupdate --list 2>/dev/null \
-      | LANG=C LC_ALL=C grep -E 'Command Line Tools' \
-      | grep -vi 'beta' \
-      | awk -F': ' '{print ($2 ? $2 : $1)}' \
-      | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' \
-      | tail -n1
-  )"
-
-  if [[ -z "$CLT_LABEL" ]]; then
-    echo "[bootstrap] ERROR: Command Line Tools label not found via softwareupdate." >&2
-    echo "          Try: 'softwareupdate --list' to inspect available labels." >&2
-    exit 1
-  fi
-
-  echo "[bootstrap] Installing: $CLT_LABEL"
-  tries=0
-  until sudo /usr/sbin/softwareupdate --install "$CLT_LABEL" --verbose; do
-    tries=$((tries+1))
-    [[ $tries -ge 3 ]] && { echo "[bootstrap] softwareupdate failed 3 times"; exit 1; }
-    echo "[bootstrap] Retrying CLT install ($tries/3)..." && sleep 5
-  done
-
-  # 念のため、インストール先が選ばれていなければ指定
-  if [[ -d "/Library/Developer/CommandLineTools" ]]; then
-    sudo /usr/bin/xcode-select --switch /Library/Developer/CommandLineTools >/dev/null 2>&1 || true
-  fi
-
-  # sanity check
-  if ! xcode-select -p >/dev/null 2>&1; then
-    echo "[bootstrap] ERROR: CLT seems not installed yet." >&2
-    exit 1
-  fi
-fi
-
-
 # Command Line Tools
-# if ! xcode-select -p >/dev/null 2>&1; then
-#   echo "[bootstrap] Installing Xcode Command Line Tools..."
-#   xcode-select --install || true
-#   until xcode-select -p >/dev/null 2>&1; do sleep 5; done
-# fi
+if ! xcode-select -p >/dev/null 2>&1; then
+  echo "[bootstrap] Installing Xcode Command Line Tools..."
+  xcode-select --install || true
+  until xcode-select -p >/dev/null 2>&1; do sleep 5; done
+fi
 
 until command -v git >/dev/null 2>&1; do sleep 1; done
 
