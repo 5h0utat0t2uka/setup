@@ -10,6 +10,8 @@
 ``` shell
 brew bundle dump --global
 ```
+> [!NOTE]  
+> このリポジトリの`Brewfile`の中の`karabiner-elements`以外でコメントアウトされてないものは、セットアップに必須です  
 
 ## 利用方法
 以下の3つのスクリプトで構成されているので、必要なものを調整して実行してください  
