@@ -2,30 +2,43 @@
 set -euo pipefail
 
 OWNER=""
+REPO="setup"
 BRANCH="main"
-DEST="${HOME}/setup"
+DEST=""
 DO_BUNDLE=1
 
 BREW_BIN="/opt/homebrew/bin/brew"
 command -v brew >/dev/null 2>&1 && BREW_BIN="$(command -v brew)"
 
 usage() {
-  echo "Usage: bash bootstrap.sh --owner <OWNER> [--branch main] [--dest \$HOME/setup] [--no-bundle]" >&2
+  echo "Usage: bash bootstrap.sh --owner <OWNER> [--repo setup] [--branch main] [--dest \$HOME/<repo>] [--no-bundle]" >&2
+
   exit 2
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --owner)  OWNER="${2-}"; shift 2 ;;
-    --branch) BRANCH="${2-}"; shift 2 ;;
-    --dest)   DEST="${2-}";  shift 2 ;;
-    --no-bundle) DO_BUNDLE=0; shift ;;
+    --owner)     OWNER="${2-}"; shift 2 ;;
+    --repo)      REPO="${2-}";  shift 2 ;;
+    --branch)    BRANCH="${2-}"; shift 2 ;;
+    --dest)      DEST="${2-}";  shift 2 ;;
+    --no-bundle) DO_BUNDLE=0;   shift ;;
     *) echo "[bootstrap] Unknown arg: $1" >&2; usage ;;
   esac
 done
 [[ -n "$OWNER" ]] || usage
+[[ -n "$REPO"  ]] || usage
 
-echo "[bootstrap] Target repo: https://github.com/${OWNER}/setup (branch=${BRANCH})"
+if [[ -z "${DEST}" ]]; then
+  DEST="${HOME}/${REPO}"
+fi
+
+if [[ ! "$REPO" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "[bootstrap] ERROR: invalid repo name: '$REPO'" >&2
+  exit 1
+fi
+
+echo "[bootstrap] Target repo: https://github.com/${OWNER}/${REPO} (branch=${BRANCH})"
 echo "[bootstrap] Destination: ${DEST}"
 
 # Command Line Tools
@@ -50,14 +63,14 @@ else
     exit 1
   fi
   export GIT_TERMINAL_PROMPT=0
-  if ! git ls-remote --exit-code --heads "https://github.com/${OWNER}/setup.git" "$BRANCH" >/dev/null 2>&1; then
-    echo "[bootstrap] ERROR: Branch '$BRANCH' not found in https://github.com/${OWNER}/setup.git" >&2
+  if ! git ls-remote --exit-code --heads "https://github.com/${OWNER}/${REPO}.git" "$BRANCH" >/dev/null 2>&1; then
+    echo "[bootstrap] ERROR: Branch '$BRANCH' not found in https://github.com/${OWNER}/${REPO}.git" >&2
     exit 1
   fi
 
   echo "[bootstrap] Cloning repo to ${DEST} ..."
   tries=0
-  until git clone "https://github.com/${OWNER}/setup.git" \
+  until git clone "https://github.com/${OWNER}/${REPO}.git" \
                   --branch "$BRANCH" --single-branch \
                   --depth=1 --filter=blob:none "$DEST"; do
     tries=$((tries+1))
@@ -65,13 +78,12 @@ else
     echo "[bootstrap] git clone failed (retry $tries/3)..." >&2
     sleep 3
   done
-
   if [[ ! -d "$DEST/.git" ]]; then
     # ZIP フォールバック
     echo "[bootstrap] Falling back to tarball download..."
     rm -rf "$DEST"
     mkdir -p "$DEST"
-    curl -fsSL "https://github.com/${OWNER}/setup/archive/${BRANCH}.tar.gz" \
+    curl -fsSL "https://github.com/${OWNER}/${REPO}/archive/${BRANCH}.tar.gz" \
       | tar -xz -C "$DEST" --strip-components=1 \
       || { echo "[bootstrap] ERROR: failed to download tarball"; exit 1; }
   fi
