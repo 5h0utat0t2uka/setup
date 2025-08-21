@@ -5,7 +5,6 @@ brew "git"
 brew "jq"
 # brew "ghq"
 # brew "ripgrep"
-#
 # brew "zoxide"
 # brew "fzf"
 # brew "eza"
