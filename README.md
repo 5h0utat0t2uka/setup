@@ -32,7 +32,6 @@ brew bundle dump --global
 
 1. 新しい環境のターミナルで`curl`から直接`bootstrap.sh`を実行  
 ``` shell
-# <OWNER>, <REPO>, <BRANCH>を自身のリポジトリの内容に書き換えてください
 bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/<REPO>/<BRANCH>/bootstrap.sh) \
   --owner <OWNER> \
   --repo <REPO> \
@@ -40,6 +39,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/<REPO>/<BRANCH>/boot
   --dest "$HOME/<REPO>"
 ```
 > [!NOTE]
+> <OWNER>, <REPO>, <BRANCH>を自身のリポジトリの内容に書き換えてください
 > 実行中にOSからインストールの確認を求められます  
 > 実行中にパスワードの入力を求められます  
 
