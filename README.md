@@ -39,7 +39,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/<OWNER>/<REPO>/<BRANCH>/boot
   --dest "$HOME/<REPO>"
 ```
 > [!NOTE]
-> <OWNER>, <REPO>, <BRANCH>を自身のリポジトリの内容に書き換えてください
+> `<OWNER>`, `<REPO>`, `<BRANCH>`を自身のリポジトリの内容に書き換えてください  
 > 実行中にOSからインストールの確認を求められます  
 > 実行中にパスワードの入力を求められます  
 
