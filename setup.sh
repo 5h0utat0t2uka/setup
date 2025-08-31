@@ -117,9 +117,40 @@ if [[ "$DO_SSH" -eq 1 ]]; then
     fi
   fi
   log "Testing SSH connectivity (optional)"
-  # ssh -o StrictHostKeyChecking=accept-new -T git@github.com || true
   ssh -o StrictHostKeyChecking=accept-new -T "git@${GIT_HOSTNAME}" || true
 
+  # SSH configの設定
+  SSH_CONFIG="${HOME}/.ssh/config"
+  log "Configuring SSH config"
+
+  # ~/.ssh/configが存在しない場合は作成
+  if [[ ! -f "$SSH_CONFIG" ]]; then
+    log "Creating SSH config file: $SSH_CONFIG"
+    touch "$SSH_CONFIG"
+    chmod 600 "$SSH_CONFIG"
+  fi
+
+  # github.comのエントリが存在するかチェック
+  if ! grep -q "^Host github\.com$" "$SSH_CONFIG" 2>/dev/null; then
+    log "Adding GitHub SSH config entry"
+    cat >> "$SSH_CONFIG" <<EOF
+
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ${SSH_KEY_PATH}
+  AddKeysToAgent yes
+  UseKeychain yes
+EOF
+  else
+    log "GitHub SSH config entry already exists"
+    # 既存のエントリがある場合の警告
+    if ! grep -q "${SSH_KEY_PATH}" "$SSH_CONFIG"; then
+      log "Warning: Existing GitHub config uses different key. Manual update may be needed."
+    fi
+  fi
+  chmod 600 "$SSH_CONFIG"
+  log "SSH config updated successfully"
 else
   log "Skipping SSH steps (--no-ssh)"
 fi
